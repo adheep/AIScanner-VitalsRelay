@@ -7,11 +7,8 @@
 	<key>com.apple.developer.healthkit.access</key>
 	<array/>
 
-	<!-- Lets iOS wake the app when new samples land while it is backgrounded.
-	     If Sideloadly refuses to sign with a free Apple ID, DELETE THIS ONE KEY
-	     and rebuild — the app detects the failure at runtime and carries on
-	     relaying while in the foreground. See README, "Entitlement fallbacks". -->
-	<key>com.apple.developer.healthkit.background-delivery</key>
-	<true/>
+	<!-- Background delivery is intentionally omitted so a free Personal Team
+	     can provision the app. Foreground HealthKit queries and Watch relay
+	     remain functional. -->
 </dict>
 </plist>
