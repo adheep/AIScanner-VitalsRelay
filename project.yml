@@ -14,6 +14,7 @@ options:
   # GitHub's macos-14 image uses Xcode 15.4. New XcodeGen releases otherwise
   # emit the Xcode 16 project format, which Xcode 15 refuses to open.
   xcodeVersion: "15.0"
+  projectFormat: xcode15_3
   createIntermediateGroups: true
   groupSortPosition: top
   deploymentTarget:
