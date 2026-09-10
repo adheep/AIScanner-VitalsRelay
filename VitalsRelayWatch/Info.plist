@@ -28,7 +28,7 @@
 	<!-- Must match the phone target's bundle id exactly or the app installs
 	     as an orphan that the phone can never reach. -->
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.aiscanner.vitalsrelay</string>
+	<string>com.aiscanner.vitalsrelay.4WBYZGVPXY</string>
 
 	<!-- The entire reason the watch app exists: workout-processing is what
 	     keeps it alive and sampling heart rate with the wrist down. -->

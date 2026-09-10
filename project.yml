@@ -56,7 +56,7 @@ targets:
           subpath: "$(CONTENTS_FOLDER_PATH)/Watch"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay.4WBYZGVPXY
         PRODUCT_NAME: VitalsRelay
         INFOPLIST_FILE: VitalsRelay/Info.plist
         CODE_SIGN_ENTITLEMENTS: VitalsRelay/VitalsRelay.entitlements
@@ -75,7 +75,7 @@ targets:
       base:
         # Must be the phone app's id + ".watchkitapp". watchOS pairs the two
         # by this exact string; anything else installs as an orphan.
-        PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay.4WBYZGVPXY.watchkitapp
         PRODUCT_NAME: VitalsRelayWatch
         INFOPLIST_FILE: VitalsRelayWatch/Info.plist
         CODE_SIGN_ENTITLEMENTS: VitalsRelayWatch/VitalsRelayWatch.entitlements
