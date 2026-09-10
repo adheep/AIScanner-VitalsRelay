@@ -41,9 +41,13 @@ final class WatchLink: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
 
-        timer = Timer.scheduledTimer(withTimeInterval: batchInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.flush() }
-        }
+        timer = Timer.scheduledTimer(
+            timeInterval: batchInterval,
+            target: self,
+            selector: #selector(flushTimerFired),
+            userInfo: nil,
+            repeats: true
+        )
     }
 
     func enqueue(_ samples: [VitalsSample]) {
@@ -53,6 +57,10 @@ final class WatchLink: NSObject, ObservableObject {
         if pending.count > 60 {
             pending.removeFirst(pending.count - 60)
         }
+    }
+
+    @objc private func flushTimerFired() {
+        flush()
     }
 
     private func flush() {
