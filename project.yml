@@ -91,3 +91,12 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  VitalsRelayWatch:
+    build:
+      targets:
+        VitalsRelayWatch: all
+    run:
+      config: Debug
+    archive:
+      config: Release
