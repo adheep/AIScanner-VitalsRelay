@@ -1,0 +1,11 @@
+# Regenerated from project.yml — never commit it.
+*.xcodeproj/
+*.xcworkspace/
+
+build/
+DerivedData/
+Payload/
+*.ipa
+*.dSYM.zip
+.DS_Store
+xcuserdata/

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Vitals Relay</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+
+	<!-- HealthKit. Both strings are shown verbatim in the permission sheet.
+	     Share (write) is requested only so the Watch app may own a workout
+	     session; the phone never writes a sample. -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>Vitals Relay reads heart rate, respiration, blood oxygen and activity from your Apple Watch so it can forward them to your own computer on this network.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Vitals Relay needs workout permission so the Apple Watch app can run a session and stream heart rate live.</string>
+
+	<!-- iOS 14+ prompts before an app may talk to anything on the LAN. Without
+	     this key the WebSocket to your PC fails with a bare connection error
+	     and no prompt ever appears. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Vitals Relay sends your health stats to the AIScanner WebApp running on your computer on this network.</string>
+
+	<!-- App Transport Security blocks plain ws:// by default. This exception is
+	     scoped to local addresses only: a 192.168.x.x / .local endpoint works,
+	     arbitrary internet http:// still does not. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

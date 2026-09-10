@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Vitals</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- Marks this as a modern single-target watch app (watchOS 9 / Xcode 14+)
+	     rather than the old WatchKit app + extension pair. -->
+	<key>WKApplication</key>
+	<true/>
+	<!-- Must match the phone target's bundle id exactly or the app installs
+	     as an orphan that the phone can never reach. -->
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>com.aiscanner.vitalsrelay</string>
+
+	<!-- The entire reason the watch app exists: workout-processing is what
+	     keeps it alive and sampling heart rate with the wrist down. -->
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
+
+	<key>NSHealthShareUsageDescription</key>
+	<string>Reads heart rate live during a relay session.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Runs a workout session so heart rate can be sampled every second.</string>
+</dict>
+</plist>

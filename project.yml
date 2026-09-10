@@ -1,0 +1,89 @@
+# XcodeGen spec. There is no .xcodeproj in the repo on purpose: a pbxproj is
+# unreadable in a diff and unmergeable, and this file is the whole project in
+# 80 lines. `xcodegen generate` reconstitutes it on any Mac or CI runner.
+#
+#   brew install xcodegen && xcodegen generate && open VitalsRelay.xcodeproj
+#
+# Change ONE thing before you build: bundleIdPrefix below. A free Apple ID can
+# only claim a bundle id nobody else has registered, so make it yours.
+
+name: VitalsRelay
+
+options:
+  bundleIdPrefix: com.aiscanner
+  createIntermediateGroups: true
+  groupSortPosition: top
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Swift 5 language mode, not 6. Strict concurrency checking would reject
+    # the HealthKit and WatchConnectivity delegate callbacks below, which are
+    # documented to arrive on arbitrary queues and hop to the main actor by
+    # hand. Nothing here needs the Swift 6 guarantees.
+    SWIFT_VERSION: "5.0"
+    GENERATE_INFOPLIST_FILE: NO
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # Left empty so an unsigned CI build works. Sideloadly supplies the real
+    # team when it re-signs, and Xcode fills it in from your account locally.
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  # ---------------------------------------------------------------- iPhone --
+  VitalsRelay:
+    type: application
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: VitalsRelay
+    dependencies:
+      # Embeds the watch app under VitalsRelay.app/Watch/, which is what makes
+      # it install to the paired Apple Watch when the phone app installs.
+      - target: VitalsRelayWatch
+        embed: true
+        codeSign: true
+        copy:
+          destination: productsDirectory
+          subpath: "$(CONTENTS_FOLDER_PATH)/Watch"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay
+        PRODUCT_NAME: VitalsRelay
+        INFOPLIST_FILE: VitalsRelay/Info.plist
+        CODE_SIGN_ENTITLEMENTS: VitalsRelay/VitalsRelay.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+
+  # ------------------------------------------------------------ Apple Watch --
+  VitalsRelayWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: Shared
+      - path: VitalsRelayWatch
+    settings:
+      base:
+        # Must be the phone app's id + ".watchkitapp". watchOS pairs the two
+        # by this exact string; anything else installs as an orphan.
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay.watchkitapp
+        PRODUCT_NAME: VitalsRelay
+        INFOPLIST_FILE: VitalsRelayWatch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: VitalsRelayWatch/VitalsRelayWatch.entitlements
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+
+schemes:
+  VitalsRelay:
+    build:
+      targets:
+        VitalsRelay: all
+    run:
+      config: Debug
+    archive:
+      config: Release

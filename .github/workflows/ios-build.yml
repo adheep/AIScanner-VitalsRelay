@@ -1,0 +1,128 @@
+name: Build unsigned IPA
+
+# Produces an unsigned VitalsRelay.ipa as a downloadable artifact. Sideloadly
+# on Windows supplies the signature afterwards, so nothing here needs an Apple
+# certificate, a provisioning profile, or any repository secret.
+#
+# If this folder is NOT the repository root, set WORKDIR below to its path
+# relative to the root, e.g. MobileApp/iOS
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  WORKDIR: .
+  SCHEME: VitalsRelay
+  APP_NAME: VitalsRelay
+
+jobs:
+  build:
+    # macOS runners are the only ones with Xcode. Minutes on them bill at 10x
+    # the Linux rate on private repositories — a public repo runs this free.
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKDIR }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "${APP_NAME}.xcodeproj" \
+            -scheme "${SCHEME}" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Ad-hoc sign so the entitlements are embedded
+        # Entitlements are written into the binary at signing time, so a purely
+        # unsigned build carries none — and Sideloadly, which re-signs from
+        # whatever it finds in the bundle, would then produce an app that
+        # cannot open HealthKit at all. The symptom is nasty: the app launches
+        # fine and simply never shows the Health permission sheet.
+        #
+        # Ad-hoc signing ("-") needs no certificate, runs on any Mac, and gets
+        # the entitlements blob in place. Sideloadly replaces the signature
+        # itself; it is the entitlements that need to survive to it.
+        #
+        # Inner bundles first: signing the outer app seals what is inside it,
+        # so re-signing the watch app afterwards would invalidate the outer.
+        run: |
+          APP="build/Build/Products/Release-iphoneos/${APP_NAME}.app"
+          WATCH="${APP}/Watch/${APP_NAME}.app"
+          if [ -d "${WATCH}" ]; then
+            codesign --force --sign - \
+              --entitlements VitalsRelayWatch/VitalsRelayWatch.entitlements \
+              --generate-entitlement-der "${WATCH}"
+          fi
+          codesign --force --sign - \
+            --entitlements VitalsRelay/VitalsRelay.entitlements \
+            --generate-entitlement-der "${APP}"
+          echo "--- entitlements now embedded ---"
+          codesign -d --entitlements - "${APP}" || true
+
+      - name: Verify the watch app was embedded
+        # The watch app is the flakiest part of this build. Catching a missing
+        # Watch/ directory here is far cheaper than discovering it after
+        # sideloading, when the symptom is just "no live heart rate".
+        run: |
+          APP="build/Build/Products/Release-iphoneos/${APP_NAME}.app"
+          if [ -d "${APP}/Watch" ]; then
+            echo "Watch app embedded:"
+            ls -la "${APP}/Watch"
+          else
+            echo "::warning::No Watch/ directory in the app bundle — the phone app will work, but live heart rate will not."
+          fi
+
+      - name: Package IPA
+        run: |
+          APP="build/Build/Products/Release-iphoneos/${APP_NAME}.app"
+          test -d "${APP}" || { echo "::error::${APP} not found"; exit 1; }
+          rm -rf Payload "${APP_NAME}.ipa"
+          mkdir -p Payload
+          cp -R "${APP}" Payload/
+          # -y preserves symlinks, which frameworks and the embedded watch app
+          # rely on; zipping without it produces a bundle that will not launch.
+          zip -qry "${APP_NAME}.ipa" Payload
+          ls -lh "${APP_NAME}.ipa"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-unsigned-ipa
+          path: ${{ env.WORKDIR }}/${{ env.APP_NAME }}.ipa
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload entitlements
+        # Handy to have next to the IPA when a signing tool wants them supplied
+        # explicitly, or when you need to check what the build actually asked for.
+        uses: actions/upload-artifact@v4
+        with:
+          name: entitlements
+          path: |
+            ${{ env.WORKDIR }}/VitalsRelay/VitalsRelay.entitlements
+            ${{ env.WORKDIR }}/VitalsRelayWatch/VitalsRelayWatch.entitlements
+          retention-days: 14

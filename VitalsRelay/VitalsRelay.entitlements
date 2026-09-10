@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+
+	<!-- Lets iOS wake the app when new samples land while it is backgrounded.
+	     If Sideloadly refuses to sign with a free Apple ID, DELETE THIS ONE KEY
+	     and rebuild — the app detects the failure at runtime and carries on
+	     relaying while in the foreground. See README, "Entitlement fallbacks". -->
+	<key>com.apple.developer.healthkit.background-delivery</key>
+	<true/>
+</dict>
+</plist>
