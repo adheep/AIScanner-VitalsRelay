@@ -11,7 +11,7 @@ import Foundation
 /// emits heart rate roughly once a second and HealthKit can hand over several
 /// metrics in the same tick; one frame per tick beats one frame per reading.
 @MainActor
-final class VitalsSocket: ObservableObject {
+final class VitalsSocket: NSObject, ObservableObject {
 
     enum State: Equatable {
         case idle
@@ -70,6 +70,7 @@ final class VitalsSocket: ObservableObject {
         self.deviceId = deviceId
         self.deviceName = deviceName
         self.appVersion = appVersion
+        super.init()
     }
 
     // MARK: - Connection
@@ -216,18 +217,29 @@ final class VitalsSocket: ObservableObject {
 
     private func startTimers() {
         flushTimer?.invalidate()
-        flushTimer = Timer.scheduledTimer(withTimeInterval: flushInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.flush() }
-        }
+        flushTimer = Timer.scheduledTimer(
+            timeInterval: flushInterval,
+            target: self,
+            selector: #selector(flushTimerFired),
+            userInfo: nil,
+            repeats: true
+        )
         pingTimer?.invalidate()
-        pingTimer = Timer.scheduledTimer(withTimeInterval: pingInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.task?.sendPing { error in
-                    guard let error else { return }
-                    Task { @MainActor in self?.handleFailure(error) }
-                }
-            }
-        }
+        pingTimer = Timer.scheduledTimer(
+            timeInterval: pingInterval,
+            target: self,
+            selector: #selector(pingTimerFired),
+            userInfo: nil,
+            repeats: true
+        )
+    }
+
+    @objc private func flushTimerFired() { flush() }
+
+    @objc private func pingTimerFired() {
+        // The receive loop owns disconnect detection. The ping keeps the path
+        // alive without capturing this main-actor object in a Sendable callback.
+        task?.sendPing { _ in }
     }
 
     // MARK: - Failure and retry
@@ -251,12 +263,13 @@ final class VitalsSocket: ObservableObject {
         state = .waiting(retryIn: Int(delay))
 
         retryTimer?.invalidate()
-        retryTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                guard let self, !self.intentionallyClosed else { return }
-                self.openSocket()
-            }
-        }
+        retryTimer = Timer.scheduledTimer(
+            timeInterval: delay,
+            target: self,
+            selector: #selector(retryTimerFired),
+            userInfo: nil,
+            repeats: false
+        )
         // Surface the underlying reason once, rather than replacing the
         // countdown with it — the countdown is the more useful of the two.
         if retryAttempt == 1 {
@@ -266,6 +279,11 @@ final class VitalsSocket: ObservableObject {
 
     /// Most recent transport error, for the diagnostics line in the UI.
     @Published private(set) var lastFailureReason: String?
+
+    @objc private func retryTimerFired() {
+        guard !intentionallyClosed else { return }
+        openSocket()
+    }
 
     private func teardown(keepingState: Bool = false) {
         flushTimer?.invalidate(); flushTimer = nil

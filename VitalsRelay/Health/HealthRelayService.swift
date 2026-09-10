@@ -19,7 +19,7 @@ import HealthKit
 /// is usually seconds under load and can stretch to minutes when idle. The
 /// watch app is what closes that gap; see WorkoutSessionManager.
 @MainActor
-final class HealthRelayService {
+final class HealthRelayService: NSObject {
 
     /// Called whenever new readings are available. Never called with an empty array.
     var onSamples: (([VitalsSample]) -> Void)?
@@ -76,9 +76,17 @@ final class HealthRelayService {
         }
         refreshCumulative()
 
-        cumulativeTimer = Timer.scheduledTimer(withTimeInterval: cumulativeInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refreshCumulative() }
-        }
+        cumulativeTimer = Timer.scheduledTimer(
+            timeInterval: cumulativeInterval,
+            target: self,
+            selector: #selector(cumulativeTimerFired),
+            userInfo: nil,
+            repeats: true
+        )
+    }
+
+    @objc private func cumulativeTimerFired() {
+        refreshCumulative()
     }
 
     func stop() {
