@@ -76,7 +76,7 @@ targets:
         # Must be the phone app's id + ".watchkitapp". watchOS pairs the two
         # by this exact string; anything else installs as an orphan.
         PRODUCT_BUNDLE_IDENTIFIER: com.aiscanner.vitalsrelay.watchkitapp
-        PRODUCT_NAME: VitalsRelay
+        PRODUCT_NAME: VitalsRelayWatch
         INFOPLIST_FILE: VitalsRelayWatch/Info.plist
         CODE_SIGN_ENTITLEMENTS: VitalsRelayWatch/VitalsRelayWatch.entitlements
         TARGETED_DEVICE_FAMILY: "4"

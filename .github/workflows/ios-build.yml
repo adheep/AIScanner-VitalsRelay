@@ -72,7 +72,7 @@ jobs:
         # so re-signing the watch app afterwards would invalidate the outer.
         run: |
           APP="build/Build/Products/Release-iphoneos/${APP_NAME}.app"
-          WATCH="${APP}/Watch/${APP_NAME}.app"
+          WATCH="${APP}/Watch/VitalsRelayWatch.app"
           if [ -d "${WATCH}" ]; then
             codesign --force --sign - \
               --entitlements VitalsRelayWatch/VitalsRelayWatch.entitlements \
