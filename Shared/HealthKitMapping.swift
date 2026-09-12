@@ -34,7 +34,7 @@ extension VitalsMetric {
         case .oxygenSaturation:
             return HKUnit.percent()
         case .wristTemperature:
-            return HKUnit.degreeCelsius()
+            return HKUnit.degreeFahrenheit()
         case .vo2Max:
             return HKUnit.literUnit(with: .milli)
                 .unitDivided(by: HKUnit.gramUnit(with: .kilo).unitMultiplied(by: .minute()))

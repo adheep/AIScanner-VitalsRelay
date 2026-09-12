@@ -41,7 +41,7 @@ enum VitalsMetric: String, Codable, CaseIterable, Hashable {
         case .heartRateVariability:  return "ms"
         case .respiratoryRate:       return "br/min"
         case .oxygenSaturation:      return "%"
-        case .wristTemperature:      return "°C"
+        case .wristTemperature:      return "°F"
         case .vo2Max:                return "ml/kg/min"
         case .steps:                 return "steps"
         case .activeEnergy:          return "kcal"
