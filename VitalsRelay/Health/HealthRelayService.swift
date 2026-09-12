@@ -3,11 +3,13 @@ import HealthKit
 
 /// Reads the Watch data out of HealthKit on the phone and hands it upstream.
 ///
-/// Three mechanisms, because HealthKit has no single one that covers the job:
+/// Four mechanisms, because HealthKit has no single one that covers the job:
 ///
 ///   HKObserverQuery       registers for background wake-up. Its only job is to
 ///                         get the process running when a sample lands while
 ///                         the app is backgrounded; it carries no data itself.
+///   HKSampleQuery         hydrates the latest known discrete values whenever
+///                         the relay starts, including sparse older readings.
 ///   HKAnchoredObjectQuery streams new discrete samples. The anchor is
 ///                         persisted, so a relaunch resumes where it stopped
 ///                         instead of re-sending the last hour.
@@ -68,6 +70,13 @@ final class HealthRelayService: NSObject {
         isRunning = true
         loadAnchors()
 
+        // An anchored query only returns samples newer than its saved anchor.
+        // Hydrate the screen/socket separately on every launch, otherwise
+        // slow-moving values such as resting HR, respiration, wrist
+        // temperature and VO2 max remain blank until Health creates another
+        // sample (which can take days or weeks).
+        hydrateLatestDiscreteReadings()
+
         for metric in VitalsMetric.discrete {
             startAnchoredQuery(for: metric)
         }
@@ -110,6 +119,41 @@ final class HealthRelayService: NSObject {
     }
 
     // MARK: - Discrete metrics
+
+    /// Fetch the newest value that exists for every point-in-time metric.
+    ///
+    /// There is deliberately no date predicate here. Some legitimate Health
+    /// metrics are sparse: VO2 max may only be calculated after an eligible
+    /// outdoor workout, and wrist temperature/respiration are commonly
+    /// recorded only during sleep. `limit: 1` keeps this efficient while
+    /// allowing the WebApp to show the freshest available value immediately.
+    private func hydrateLatestDiscreteReadings() {
+        let newestFirst = NSSortDescriptor(
+            key: HKSampleSortIdentifierEndDate,
+            ascending: false
+        )
+
+        for metric in VitalsMetric.discrete {
+            guard let type = metric.quantityType else { continue }
+
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: nil,
+                limit: 1,
+                sortDescriptors: [newestFirst]
+            ) { [weak self] _, samples, error in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if let error {
+                        self.onWarning?(metric.displayName + ": " + error.localizedDescription)
+                        return
+                    }
+                    self.emit(quantitySamples: samples, metric: metric)
+                }
+            }
+            store.execute(query)
+        }
+    }
 
     private func startAnchoredQuery(for metric: VitalsMetric) {
         guard let type = metric.quantityType else { return }

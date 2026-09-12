@@ -13,9 +13,10 @@ import HealthKit
 /// **discarded** on stop rather than saved: this is telemetry, not exercise,
 /// and it has no business appearing in the Activity rings.
 ///
-/// Only heart rate, active energy and distance are available this way. Blood
-/// oxygen and respiratory rate are not workout-collected metrics on watchOS —
-/// the Watch samples those periodically on its own schedule, so they reach the
+/// Only heart rate is relayed this way. The builder's energy and distance are
+/// temporary workout-session totals, not today's Activity totals. Blood oxygen
+/// and respiratory rate are not workout-collected metrics on watchOS — the
+/// Watch samples those periodically on its own schedule, so they reach the
 /// WebApp through HealthKit on the phone instead.
 @MainActor
 final class WorkoutSessionManager: NSObject, ObservableObject {
@@ -32,8 +33,10 @@ final class WorkoutSessionManager: NSObject, ObservableObject {
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
 
-    /// What the live builder can actually give us.
-    private static let liveMetrics: [VitalsMetric] = [.heartRate, .activeEnergy, .distance]
+    /// The one metric whose live-workout meaning matches the wire contract.
+    /// Energy and distance from this builder are scan-session totals, not the
+    /// daily Activity totals displayed by the phone and WebApp.
+    private static let liveMetrics: [VitalsMetric] = [.heartRate]
 
     // MARK: - Authorisation
 
@@ -118,18 +121,11 @@ final class WorkoutSessionManager: NSObject, ObservableObject {
                 let statistics = builder.statistics(for: type)
             else { continue }
 
-            // Heart rate is a rate: the most recent reading is the answer.
-            // Energy and distance accumulate: the sum since the session began
-            // is the answer. Taking the wrong one of these is the classic bug
-            // here — mostRecentQuantity on energy yields a meaningless sliver.
-            let quantity: HKQuantity? = metric == .heartRate
-                ? statistics.mostRecentQuantity()
-                : statistics.sumQuantity()
-
-            guard let quantity else { continue }
+            // Live metrics are rates; the newest builder reading is the value.
+            guard let quantity = statistics.mostRecentQuantity() else { continue }
             let value = metric.wireValue(from: quantity)
 
-            if metric == .heartRate { heartRate = value }
+            heartRate = value
 
             batch.append(
                 VitalsSample(
